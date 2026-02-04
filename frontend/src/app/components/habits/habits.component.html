@@ -1,0 +1,120 @@
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <h1>Habit Tracker</h1>
+      <button class="btn-logout" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Habits List -->
+  <div class="habits-section">
+    <div class="section-header">
+      <h2>My Habits</h2>
+      <button class="btn-add" (click)="showAddModal = true">+ Add Habit</button>
+    </div>
+
+    <div class="habits-list" *ngIf="habits.length > 0">
+      <div class="habit-card" *ngFor="let habit of habits">
+        <div class="habit-info">
+          <div class="habit-color" [style.background-color]="habit.color"></div>
+          <div class="habit-details">
+            <h3>{{ habit.name }}</h3>
+            <p class="streak">🔥 {{ getStreak(habit) }} day streak</p>
+          </div>
+        </div>
+        <button class="btn-delete" (click)="deleteHabit(habit)">×</button>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="habits.length === 0">
+      <p>No habits yet. Create one to get started!</p>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="calendar-section">
+    <div class="calendar-header">
+      <button class="btn-nav" (click)="previousMonth()">←</button>
+      <h2>{{ getMonthYear() }}</h2>
+      <button class="btn-nav" (click)="nextMonth()">→</button>
+    </div>
+
+    <div class="calendar">
+      <!-- Day names -->
+      <div class="calendar-days">
+        <div class="day-name" *ngFor="let day of [0,1,2,3,4,5,6]">
+          {{ getDayName(day) }}
+        </div>
+      </div>
+
+      <!-- Calendar grid -->
+      <div class="calendar-grid">
+        <div class="calendar-week" *ngFor="let week of calendar">
+          <div 
+            class="calendar-day"
+            *ngFor="let day of week"
+            [class.other-month]="!day.isCurrentMonth"
+            [class.today]="day.isToday"
+          >
+            <div class="day-number">{{ day.date.getDate() }}</div>
+            <div class="habit-dots">
+              <div 
+                class="habit-dot"
+                *ngFor="let habit of habits"
+                [style.background-color]="day.entries.get(habit.id) ? habit.color : '#e5e7eb'"
+                [class.completed]="day.entries.get(habit.id)"
+                (click)="toggleHabitForDay(habit, day)"
+                [title]="habit.name"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Habit Modal -->
+<div class="modal" *ngIf="showAddModal" (click)="showAddModal = false">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Add New Habit</h2>
+      <button class="btn-close" (click)="showAddModal = false">×</button>
+    </div>
+
+    <form [formGroup]="habitForm" (ngSubmit)="onAddHabit()">
+      <div class="form-group">
+        <label for="habit-name">Habit Name</label>
+        <input
+          id="habit-name"
+          type="text"
+          formControlName="name"
+          placeholder="e.g., Exercise, No Alcohol"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Color</label>
+        <div class="color-picker">
+          <div 
+            class="color-option"
+            *ngFor="let color of selectedColors"
+            [style.background-color]="color"
+            [class.selected]="habitForm.get('color')?.value === color"
+            (click)="habitForm.patchValue({ color: color })"
+          ></div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="showAddModal = false">
+          Cancel
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="habitForm.invalid">
+          Add Habit
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
