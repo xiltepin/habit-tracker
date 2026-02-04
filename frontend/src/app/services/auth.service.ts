@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthResponse, User } from '../models/habit.model';
 
@@ -17,21 +18,37 @@ export class AuthService {
   }
 
   private loadUser(): void {
-    const token = this.getToken();
+    const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     if (token && userStr) {
-      this.currentUserSubject.next(JSON.parse(userStr));
+      try {
+        this.currentUserSubject.next(JSON.parse(userStr));
+      } catch (e) {
+        console.error('Error parsing user from localStorage', e);
+      }
     }
   }
 
   register(email: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, { email, password })
-      .pipe(tap(response => this.handleAuth(response)));
+      .pipe(
+        tap(response => {
+          console.log('Register response:', response);
+          this.handleAuth(response);
+        })
+      );
   }
 
   login(email: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, { email, password })
-      .pipe(tap(response => this.handleAuth(response)));
+      .pipe(
+        tap(response => {
+          console.log('Login response:', response);
+          console.log('Saving token:', response.access_token);
+          this.handleAuth(response);
+          console.log('Token saved, checking:', localStorage.getItem('token'));
+        })
+      );
   }
 
   logout(): void {
@@ -41,7 +58,9 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    console.log('Getting token:', token ? 'exists' : 'null');
+    return token;
   }
 
   isAuthenticated(): boolean {
@@ -49,6 +68,7 @@ export class AuthService {
   }
 
   private handleAuth(response: AuthResponse): void {
+    console.log('handleAuth called with:', response);
     localStorage.setItem('token', response.access_token);
     localStorage.setItem('user', JSON.stringify(response.user));
     this.currentUserSubject.next(response.user);
